@@ -447,12 +447,7 @@ Rules: plausible distractors, 40% numerical for costing/accounting papers, stric
 }
 
 function prefetchNext(diff, history) {
-  if(prefetching) return;
-  prefetching=true;
-  fetchQ(diff, history)
-    .then(q=>{ prefetched=q; })
-    .catch(()=>{ prefetched=null; })
-    .finally(()=>{ prefetching=false; });
+  // disabled to avoid rate limit
 }
 
 // ── Quiz Start ───────────────────────────────────────────────────
