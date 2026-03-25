@@ -386,10 +386,10 @@ function selectPaper(p,el) {
 // ── Fetch Question (Gemini) ──────────────────────────────────────
 async function fetchQ(diff, history, retryCount=0) {
   const avoid = history.length ? ' Avoid topics: '+history.slice(-5).join(', ')+'.' : '';
-  const prompt = `ICMAI CMA MCQ generator. Output ONLY JSON, no markdown:
-{"q":"question","o":{"A":"...","B":"...","C":"...","D":"..."},"ans":"A","why":"one sentence","t":"topic"}
+  const prompt = `Generate exactly ONE MCQ for ICMAI CMA exam. Output a single JSON object only:
+{"q":"question text","o":{"A":"option","B":"option","C":"option","D":"option"},"ans":"A","why":"one sentence explanation","t":"topic name"}
 Level: ${selLevel} | Paper: ${selPaper} | Difficulty: ${diff}${avoid}
-Rules: plausible distractors, 40% numerical for costing/accounting papers, strict ICMAI syllabus.`;
+Important: Output ONLY the JSON object. No other text before or after.`;
 
   const url = 'https://api.groq.com/openai/v1/chat/completions';
   let res, data;
@@ -402,9 +402,12 @@ Rules: plausible distractors, 40% numerical for costing/accounting papers, stric
       },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 350,
-        temperature: 0.7
+        messages: [
+          { role: 'system', content: 'You are a JSON generator. Output ONLY a single valid JSON object. No extra text, no multiple objects, no markdown.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
       })
     });
     data = await res.json();
