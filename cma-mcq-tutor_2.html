@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CMA India MCQ Tutor</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; color: #111827; min-height: 100vh; }
+
+.page { display: none; min-height: 100vh; align-items: flex-start; justify-content: center; padding: 24px 16px; }
+.page.active { display: flex; }
+
+.card { width: 100%; max-width: 580px; background: #fff; border-radius: 18px; padding: 28px; border: 1px solid #e5e7eb; margin-top: 12px; }
+
+/* API Key page */
+.key-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+.key-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.key-desc { font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 20px; }
+.key-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #d1d5db; font-size: 14px; outline: none; margin-bottom: 8px; font-family: monospace; color: #111827; background: #f9fafb; }
+.key-input:focus { border-color: #16a34a; }
+.key-hint { font-size: 12px; color: #6b7280; line-height: 1.6; margin-bottom: 16px; }
+.key-hint a { color: #2563eb; }
+.key-error { font-size: 12px; color: #dc2626; margin-bottom: 10px; display: none; }
+
+/* Setup page */
+.setup-hero { text-align: center; margin-bottom: 28px; }
+.setup-hero .icon { font-size: 40px; display: block; margin-bottom: 8px; }
+.setup-hero h1 { font-size: 21px; font-weight: 600; margin-bottom: 4px; }
+.setup-hero p { font-size: 14px; color: #6b7280; }
+
+.section { margin-bottom: 20px; }
+.lbl { font-size: 11px; font-weight: 600; color: #6b7280; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 8px; }
+
+.chip-row { display: flex; gap: 8px; }
+.chip { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; color: #6b7280; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; text-align: center; }
+.chip:hover { border-color: #16a34a; color: #16a34a; }
+.chip.active { background: #f0fdf4; border-color: #16a34a; color: #16a34a; font-weight: 600; }
+
+.paper-list { display: flex; flex-direction: column; gap: 6px; }
+.paper-btn { padding: 10px 12px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; color: #6b7280; font-size: 13px; cursor: pointer; text-align: left; transition: all 0.15s; }
+.paper-btn:hover { border-color: #16a34a; color: #16a34a; }
+.paper-btn.active { background: #f0fdf4; border-color: #16a34a; color: #16a34a; font-weight: 500; }
+
+.btn-primary { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #16a34a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-primary:hover:not(:disabled) { opacity: 0.9; }
+
+/* Quiz page */
+.plant-strip { display: flex; align-items: flex-end; gap: 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; }
+.plant-wrap { position: relative; flex-shrink: 0; }
+.plant-wrap svg { display: block; }
+
+.xp-toast { position: absolute; top: 0; right: -8px; font-size: 12px; font-weight: 700; color: #16a34a; pointer-events: none; opacity: 0; }
+.xp-toast.show { animation: floatUp 1s ease forwards; }
+
+.plant-right { flex: 1; }
+.xp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.level-info { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #16a34a; }
+.levelup-badge { font-size: 10px; background: #fbbf24; color: #78350f; border-radius: 99px; padding: 1px 7px; font-weight: 700; animation: popIn 0.4s ease; display: none; }
+.xp-label { font-size: 11px; color: #6b7280; }
+
+.xp-track { height: 7px; background: #d1fae5; border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+.xp-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #22c55e); border-radius: 99px; transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); width: 0%; }
+
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+.stat-box { background: white; border-radius: 8px; padding: 6px 4px; text-align: center; border: 1px solid #e5e7eb; }
+.stat-val { font-size: 15px; font-weight: 600; }
+.stat-lbl { font-size: 10px; color: #6b7280; margin-top: 1px; }
+.streak-msg { margin-top: 7px; font-size: 11px; font-weight: 600; color: #d97706; display: none; }
+
+.q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.q-meta { display: flex; gap: 8px; align-items: center; }
+.q-num { font-size: 12px; font-weight: 600; color: #6b7280; }
+.diff-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+.diff-Easy   { background: #dcfce7; color: #15803d; }
+.diff-Medium { background: #fef3c7; color: #92400e; }
+.diff-Hard   { background: #fee2e2; color: #991b1b; }
+.xp-hint { font-size: 11px; color: #6b7280; }
+
+.timer-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.timer-track { flex: 1; height: 5px; background: #f3f4f6; border-radius: 99px; overflow: hidden; }
+.timer-fill { height: 100%; border-radius: 99px; transition: width 1s linear, background 0.3s; }
+.timer-num { font-size: 13px; font-weight: 600; min-width: 36px; font-variant-numeric: tabular-nums; }
+
+.paper-lbl { font-size: 11px; color: #9ca3af; font-weight: 500; margin-bottom: 12px; }
+.q-text { font-size: 15px; line-height: 1.7; margin-bottom: 14px; }
+
+.options { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.opt { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; font-size: 14px; text-align: left; cursor: pointer; transition: all 0.15s; line-height: 1.5; color: #111827; width: 100%; }
+.opt:hover:not(:disabled) { border-color: #16a34a; background: #f0fdf4; }
+.opt.selected { border-color: #3b82f6; background: #eff6ff; color: #1d4ed8; }
+.opt.correct  { border-color: #22c55e; background: #f0fdf4; color: #16a34a; cursor: default; }
+.opt.wrong    { border-color: #ef4444; background: #fef2f2; color: #dc2626; cursor: default; }
+.opt.dimmed   { opacity: 0.4; cursor: default; }
+.opt:disabled { cursor: default; }
+.opt-letter { font-weight: 600; min-width: 18px; flex-shrink: 0; }
+.opt-text { flex: 1; }
+.opt-mark { margin-left: auto; font-weight: 700; flex-shrink: 0; }
+
+.rationale { background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb; padding: 12px 14px; margin-bottom: 14px; animation: fadeUp 0.2s ease; display: none; }
+.rationale-verdict { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.rationale-text { font-size: 13px; color: #6b7280; line-height: 1.6; }
+
+.action-row { display: flex; gap: 8px; }
+.btn-skip { padding: 11px 16px; border-radius: 8px; border: 1px solid #d1d5db; background: transparent; color: #6b7280; font-size: 14px; cursor: pointer; }
+.btn-skip:hover { background: #f9fafb; }
+.btn-submit { flex: 1; padding: 11px; border-radius: 8px; border: none; background: #16a34a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+.btn-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-next { flex: 1; padding: 11px; border-radius: 8px; border: none; background: #16a34a; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+.loading-box { text-align: center; padding: 40px 0; display: none; }
+.spinner { width: 28px; height: 28px; border: 3px solid #e5e7eb; border-top: 3px solid #16a34a; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 10px; }
+.loading-text { font-size: 13px; color: #6b7280; }
+
+#levelup-banner { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: #fbbf24; color: #78350f; border-radius: 99px; padding: 8px 20px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: none; z-index: 999; animation: popIn 0.4s ease; }
+
+@keyframes spin    { to { transform: rotate(360deg) } }
+@keyframes popIn   { 0%{transform:translateX(-50%) scale(0.5);opacity:0} 70%{transform:translateX(-50%) scale(1.1)} 100%{transform:translateX(-50%) scale(1);opacity:1} }
+@keyframes floatUp { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-28px)} }
+@keyframes fadeUp  { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+@keyframes shake   { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+@keyframes float   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+
+/* ── Mobile responsive ── */
+@media (max-width: 480px) {
+  .page { padding: 12px 10px; }
+  .card { padding: 18px 14px; border-radius: 14px; margin-top: 6px; }
+
+  /* Setup */
+  .setup-hero .icon { font-size: 32px; }
+  .setup-hero h1 { font-size: 18px; }
+  .chip { font-size: 12px; padding: 8px 4px; }
+  .paper-btn { font-size: 12px; padding: 9px 10px; }
+
+  /* Plant strip — stack vertically on very small screens */
+  .plant-strip { flex-direction: column; align-items: center; gap: 10px; padding: 12px 10px; }
+  .plant-right { width: 100%; }
+  .plant-wrap svg { width: 80px; height: 100px; }
+
+  /* Stats */
+  .stats-row { gap: 4px; }
+  .stat-val { font-size: 13px; }
+  .stat-lbl { font-size: 9px; }
+
+  /* Question */
+  .q-text { font-size: 14px; }
+  .opt { font-size: 13px; padding: 10px 11px; gap: 8px; }
+  .opt-letter { min-width: 16px; }
+
+  /* Buttons — full width easy tap targets */
+  .btn-skip { padding: 12px 14px; font-size: 13px; }
+  .btn-submit, .btn-next { font-size: 13px; padding: 12px; }
+  .btn-primary { padding: 13px; font-size: 14px; }
+
+  /* Timer */
+  .timer-num { font-size: 12px; min-width: 30px; }
+
+  /* Rationale */
+  .rationale-verdict { font-size: 12px; }
+  .rationale-text { font-size: 12px; }
+
+  /* Level up banner */
+  #levelup-banner { font-size: 12px; padding: 7px 14px; width: 90%; text-align: center; }
+
+  /* XP */
+  .level-info { font-size: 12px; }
+  .xp-label { font-size: 10px; }
+}
+
+/* Tap highlight removal for mobile */
+button { -webkit-tap-highlight-color: transparent; }
+/* Prevent zoom on input focus iOS */
+input { font-size: 16px !important; }
+</style>
+</head>
+<body>
+
+<!-- ── API Key Page ─────────────────────────────── -->
+<div id="page-apikey" class="page">
+  <div class="card">
+    <span class="key-icon">🌱</span>
+    <div class="key-title">CMA India MCQ Tutor</div>
+    <div class="key-desc">Paste your Google Apps Script proxy URL below. This lets the app fetch questions for free without any CORS issues.</div>
+    <input class="key-input" id="key-input" type="text" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off" />
+    <div class="key-error" id="key-error">Please paste a valid Apps Script URL (starts with https://script.google.com)</div>
+    <div class="key-hint">
+      <b>One-time setup:</b><br>
+      1. Go to <a href="https://script.google.com" target="_blank">script.google.com</a> → New Project<br>
+      2. Paste the proxy code (see instructions)<br>
+      3. Deploy as Web App → Anyone can access → Copy URL<br><br>
+      This is 100% free and works forever.
+    </div>
+    <button class="btn-primary" onclick="saveKey()">Continue →</button>
+  </div>
+</div>
+
+<!-- ── Setup Page ───────────────────────────────── -->
+<div id="page-setup" class="page active">
+  <div class="card">
+    <div class="setup-hero">
+      <span class="icon">🌱</span>
+      <h1>Pick your paper and grow</h1>
+      <p>Answer correctly to grow your plant from seedling to flower</p>
+    </div>
+
+    <div class="section">
+      <div class="lbl">Exam Level</div>
+      <div class="chip-row" id="level-chips"></div>
+    </div>
+
+    <div class="section" id="paper-section" style="display:none">
+      <div class="lbl">Paper</div>
+      <div class="paper-list" id="paper-list"></div>
+    </div>
+
+    <button class="btn-primary" id="start-btn" disabled onclick="startQuiz()">Start practice →</button>
+  </div>
+</div>
+
+<!-- ── Quiz Page ────────────────────────────────── -->
+<div id="page-quiz" class="page">
+  <div class="card">
+
+    <!-- Plant strip -->
+    <div class="plant-strip">
+      <div class="plant-wrap">
+        <svg id="plant-svg" width="110" height="140" viewBox="0 0 110 140"></svg>
+        <div id="xp-toast" class="xp-toast"></div>
+      </div>
+      <div class="plant-right">
+        <div class="xp-header">
+          <div class="level-info">
+            <span id="lvl-emoji">🌱</span>
+            <span id="lvl-name">Seedling</span>
+            <span class="levelup-badge" id="lvl-badge">LEVEL UP!</span>
+          </div>
+          <span class="xp-label" id="xp-label">0 XP</span>
+        </div>
+        <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+        <div class="stats-row">
+          <div class="stat-box"><div class="stat-val" id="s-correct" style="color:#16a34a">0</div><div class="stat-lbl">Correct</div></div>
+          <div class="stat-box"><div class="stat-val" id="s-wrong"   style="color:#dc2626">0</div><div class="stat-lbl">Wrong</div></div>
+          <div class="stat-box"><div class="stat-val" id="s-streak"  style="color:#d97706">0</div><div class="stat-lbl">Streak</div></div>
+          <div class="stat-box"><div class="stat-val" id="s-acc">—</div><div class="stat-lbl">Accuracy</div></div>
+        </div>
+        <div class="streak-msg" id="streak-msg"></div>
+      </div>
+    </div>
+
+    <!-- Q header -->
+    <div class="q-header">
+      <div class="q-meta">
+        <span class="q-num" id="q-num">Q1</span>
+        <span class="diff-badge diff-Medium" id="diff-badge">Medium</span>
+        <span style="font-size:11px;color:#9ca3af" id="paper-short"></span>
+      </div>
+      <span class="xp-hint" id="xp-hint">+20 XP</span>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-row">
+      <div class="timer-track"><div class="timer-fill" id="timer-bar" style="width:100%;background:#22c55e"></div></div>
+      <span class="timer-num" id="timer-num" style="color:#22c55e">1:40</span>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-box" id="loading-box" style="display:block">
+      <div class="spinner"></div>
+      <div class="loading-text" id="loading-text">Growing your first question…</div>
+    </div>
+
+    <!-- Question area -->
+    <div id="q-area" style="display:none">
+      <p class="q-text" id="q-text"></p>
+      <div class="options" id="options"></div>
+      <div class="rationale" id="rationale">
+        <div class="rationale-verdict" id="r-verdict"></div>
+        <div class="rationale-text" id="r-text"></div>
+      </div>
+      <div class="action-row" id="action-row"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="levelup-banner">🎉 Level Up!</div>
+
+<script>
+// ── Constants ────────────────────────────────────────────────────
+const PAPERS = {
+  Foundation: [
+    "Paper 1: Business Laws & Communication",
+    "Paper 2: Financial & Cost Accounting",
+    "Paper 3: Business Mathematics & Statistics",
+    "Paper 4: Business Economics & Management",
+  ],
+  Intermediate: [
+    "Paper 5: Financial Accounting","Paper 6: Laws & Ethics",
+    "Paper 7: Direct Taxation","Paper 8: Cost Accounting",
+    "Paper 9: Operations & Strategic Management",
+    "Paper 10: Cost & Management Accounting",
+    "Paper 11: Indirect Taxation (GST)","Paper 12: Company Accounts & Audit",
+  ],
+  Final: [
+    "Paper 13: Corporate Laws & Compliance",
+    "Paper 14: Strategic Financial Management",
+    "Paper 15: Direct Tax & International Tax",
+    "Paper 16: Strategic Cost Management","Paper 17: Cost & Management Audit",
+    "Paper 18: Corporate Financial Reporting",
+    "Paper 19: Indirect Tax Laws & Practice",
+    "Paper 20: Strategic Performance Management",
+  ],
+};
+const LEVELS = [
+  {min:0,   name:"Seedling",   emoji:"🌱"},
+  {min:100, name:"Sprout",     emoji:"🌿"},
+  {min:200, name:"Sapling",    emoji:"🪴"},
+  {min:350, name:"Scholar",    emoji:"🌳"},
+  {min:500, name:"Expert",     emoji:"🏆"},
+  {min:700, name:"CMA Master", emoji:"🎓"},
+];
+const XP_TABLE = {Easy:10, Medium:20, Hard:35};
+const TOTAL_TIME = 100;
+
+// ── State ────────────────────────────────────────────────────────
+let apiKey="https://script.google.com/macros/s/AKfycbzuOIuXn2UQY_w1Os74EXVivkuMP5RLFeZqFZG6G2q9w9BGzsGFeNk37uRdrJ71RKVwHQ/exec", selLevel="", selPaper="", difficulty="Medium";
+let stats={correct:0,wrong:0,skipped:0}, streak=0, xp=0, qNum=0;
+let currentQ=null, selected=null, submitted=false;
+let timeLeft=TOTAL_TIME, timerInterval=null;
+let topicsHistory=[], prefetched=null, prefetching=false;
+let xpToastTimer=null;
+
+// ── Helpers ──────────────────────────────────────────────────────
+function getLevel(x) {
+  for(let i=LEVELS.length-1;i>=0;i--) if(x>=LEVELS[i].min) return{...LEVELS[i],index:i};
+  return{...LEVELS[0],index:0};
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function $(id){return document.getElementById(id);}
+
+// ── API Key ──────────────────────────────────────────────────────
+function saveKey() {
+  const val = $('key-input').value.trim();
+  if(!val.startsWith('https://script.google.com')){
+    $('key-error').style.display='block'; return;
+  }
+  apiKey=val; $('key-error').style.display='none';
+  buildSetup(); showPage('page-setup');
+}
+$('key-input').addEventListener('keydown', e=>{ if(e.key==='Enter') saveKey(); });
+
+// ── Setup ────────────────────────────────────────────────────────
+function buildSetup() {
+  const chips = $('level-chips'); chips.innerHTML='';
+  Object.keys(PAPERS).forEach(l=>{
+    const b=document.createElement('button');
+    b.className='chip'; b.textContent=l;
+    b.onclick=()=>selectLevel(l);
+    chips.appendChild(b);
+  });
+}
+
+function selectLevel(l) {
+  selLevel=l; selPaper='';
+  document.querySelectorAll('.chip').forEach(b=>b.classList.toggle('active',b.textContent===l));
+  const list=$('paper-list'); list.innerHTML='';
+  PAPERS[l].forEach(p=>{
+    const b=document.createElement('button');
+    b.className='paper-btn'; b.textContent=p;
+    b.onclick=()=>selectPaper(p,b);
+    list.appendChild(b);
+  });
+  $('paper-section').style.display='block';
+  $('start-btn').disabled=true;
+}
+
+function selectPaper(p,el) {
+  selPaper=p;
+  document.querySelectorAll('.paper-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  $('start-btn').disabled=false;
+}
+
+// ── Fetch Question (Gemini) ──────────────────────────────────────
+async function fetchQ(diff, history) {
+  const avoid = history.length ? ' Avoid topics: '+history.slice(-5).join(', ')+'.' : '';
+  const prompt = `ICMAI CMA MCQ generator. Output ONLY JSON, no markdown:
+{"q":"question","o":{"A":"...","B":"...","C":"...","D":"..."},"ans":"A","why":"one sentence","t":"topic"}
+Level: ${selLevel} | Paper: ${selPaper} | Difficulty: ${diff}${avoid}
+Rules: plausible distractors, 40% numerical for costing/accounting papers, strict ICMAI syllabus.`;
+
+  let res, data;
+  try {
+    res = await fetch(apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+      })
+    });
+    data = await res.json();
+  } catch(e) {
+    console.error('Fetch error:', e);
+    showError('Network error: ' + e.message + '. Make sure the Apps Script is deployed as "Anyone" can access.');
+    return null;
+  }
+  if(data.error) {
+    console.error('Gemini error:', JSON.stringify(data.error));
+    showError('API Error: ' + (data.error.message || JSON.stringify(data.error)));
+    return null;
+  }
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  try {
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    return {
+      question: p.q||p.question,
+      options:  p.o||p.options,
+      correct:  p.ans||p.correct,
+      rationale:p.why||p.rationale,
+      topic:    p.t||p.topic,
+    };
+  } catch { return null; }
+}
+
+function prefetchNext(diff, history) {
+  if(prefetching) return;
+  prefetching=true;
+  fetchQ(diff, history)
+    .then(q=>{ prefetched=q; })
+    .catch(()=>{ prefetched=null; })
+    .finally(()=>{ prefetching=false; });
+}
+
+// ── Quiz Start ───────────────────────────────────────────────────
+function showError(msg) {
+  $('loading-text').textContent = msg;
+  $('loading-box').style.display = 'block';
+  $('q-area').style.display = 'none';
+}
+
+function startQuiz() {
+  stats={correct:0,wrong:0,skipped:0}; streak=0; xp=0; qNum=0;
+  difficulty='Medium'; topicsHistory=[]; prefetched=null;
+  showPage('page-quiz');
+  $('paper-short').textContent = selPaper.split(':')[0];
+  updatePlant(); updateStats();
+  loadQuestion(true);
+}
+
+async function loadQuestion(isFirst=false) {
+  selected=null; submitted=false;
+  clearInterval(timerInterval);
+  $('q-area').style.display='none';
+  $('rationale').style.display='none';
+  $('loading-box').style.display='block';
+  $('loading-text').textContent = isFirst ? 'Growing your first question…' : 'Loading…';
+
+  let q = prefetched; prefetched=null;
+  if(!q) q = await fetchQ(difficulty, topicsHistory);
+
+  $('loading-box').style.display='none';
+  if(!q){ $('loading-text').textContent='Failed to load. Check your API key and try again.'; $('loading-box').style.display='block'; return; }
+
+  currentQ=q; qNum++;
+  const nh = q.topic ? [...topicsHistory.slice(-9), q.topic] : topicsHistory;
+  prefetchNext(difficulty, nh);
+  renderQuestion();
+  startTimer();
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function renderQuestion() {
+  const q = currentQ;
+  $('q-num').textContent = 'Q'+qNum;
+  const db = $('diff-badge');
+  db.textContent=difficulty; db.className='diff-badge diff-'+difficulty;
+  $('xp-hint').textContent = '+'+XP_TABLE[difficulty]+' XP';
+  $('q-text').textContent = q.question;
+
+  const opts = $('options'); opts.innerHTML='';
+  ['A','B','C','D'].forEach(opt=>{
+    const b=document.createElement('button');
+    b.className='opt'; b.dataset.opt=opt;
+    b.innerHTML=`<span class="opt-letter">${opt}</span><span class="opt-text">${q.options[opt]}</span><span class="opt-mark"></span>`;
+    b.onclick=()=>selectOpt(opt,b);
+    opts.appendChild(b);
+  });
+
+  $('action-row').innerHTML=`
+    <button class="btn-skip" onclick="skipQ()">Skip</button>
+    <button class="btn-submit" id="submit-btn" onclick="submitQ()" disabled>Submit →</button>`;
+
+  $('q-area').style.display='block';
+}
+
+function selectOpt(opt, el) {
+  if(submitted) return;
+  selected=opt;
+  document.querySelectorAll('.opt').forEach(b=>{b.classList.remove('selected');});
+  el.classList.add('selected');
+  $('submit-btn').disabled=false;
+}
+
+function submitQ() {
+  if(!selected||submitted) return;
+  submitted=true; clearInterval(timerInterval);
+  evaluate(selected);
+}
+
+function skipQ() {
+  submitted=true; clearInterval(timerInterval);
+  stats.skipped++; streak=0; updateStats();
+  showAnswer(null);
+}
+
+function evaluate(ans) {
+  const correct = ans===currentQ.correct;
+  const newStreak = correct ? streak+1 : 0;
+  streak=newStreak;
+  if(correct) {
+    stats.correct++;
+    const mult = streak>=5?1.5:streak>=3?1.2:1;
+    awardXP(Math.round(XP_TABLE[difficulty]*mult));
+  } else {
+    stats.wrong++;
+    const qa=$('q-area');
+    qa.style.animation='none'; void qa.offsetWidth;
+    qa.style.animation='shake 0.4s ease';
+  }
+  // adjust difficulty
+  let nd=difficulty;
+  if(streak>=3) nd='Hard';
+  else if(!correct&&stats.wrong>=2) nd='Easy';
+  if(nd!==difficulty){ difficulty=nd; prefetched=null; prefetchNext(difficulty,topicsHistory); }
+  updateStats();
+  showAnswer(ans);
+}
+
+function showAnswer(ans) {
+  const q=currentQ;
+  document.querySelectorAll('.opt').forEach(b=>{
+    const opt=b.dataset.opt; b.disabled=true; b.classList.remove('selected');
+    const mark=b.querySelector('.opt-mark');
+    if(opt===q.correct){ b.classList.add('correct'); mark.textContent='✓'; }
+    else if(opt===ans){ b.classList.add('wrong'); mark.textContent='✗'; }
+    else b.classList.add('dimmed');
+  });
+  const timedOut = ans===null&&timeLeft===0;
+  const verd=$('r-verdict');
+  if(!ans&&!timedOut){ verd.textContent='⏭ Skipped — answer was '+q.correct; verd.style.color='#6b7280'; }
+  else if(timedOut){ verd.textContent="⏰ Time's up — answer was "+q.correct; verd.style.color='#d97706'; }
+  else if(ans===q.correct){ verd.textContent='✓ Correct!'; verd.style.color='#16a34a'; }
+  else { verd.textContent='✗ Incorrect — answer was '+q.correct; verd.style.color='#dc2626'; }
+  $('r-text').textContent='💡 '+q.rationale;
+  $('rationale').style.display='block';
+  $('action-row').innerHTML=`<button class="btn-next" onclick="nextQ()">Next question →</button>`;
+}
+
+function nextQ() {
+  const nh = currentQ?.topic ? [...topicsHistory.slice(-9),currentQ.topic] : topicsHistory;
+  topicsHistory=nh;
+  loadQuestion();
+}
+
+// ── Timer ────────────────────────────────────────────────────────
+function startTimer() {
+  timeLeft=TOTAL_TIME; clearInterval(timerInterval); updateTimerUI();
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    updateTimerUI();
+    if(timeLeft<=0){ clearInterval(timerInterval); submitted=true; evaluate(null); }
+  },1000);
+}
+
+function updateTimerUI() {
+  const pct=(timeLeft/TOTAL_TIME)*100;
+  const color=timeLeft>60?'#22c55e':timeLeft>30?'#d97706':'#dc2626';
+  $('timer-bar').style.width=pct+'%'; $('timer-bar').style.background=color;
+  $('timer-num').style.color=color;
+  $('timer-num').textContent=Math.floor(timeLeft/60)+':'+String(timeLeft%60).padStart(2,'0');
+}
+
+// ── XP & Levels ──────────────────────────────────────────────────
+function awardXP(amount) {
+  const prev=getLevel(xp);
+  xp+=amount;
+  const next=getLevel(xp);
+  if(next.index>prev.index) showLevelUp(next);
+  // toast
+  const t=$('xp-toast');
+  t.textContent='+'+amount+' XP';
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(xpToastTimer); xpToastTimer=setTimeout(()=>t.classList.remove('show'),1100);
+  updateXPBar(); updatePlant();
+}
+
+function showLevelUp(lv) {
+  $('lvl-badge').style.display='inline';
+  setTimeout(()=>$('lvl-badge').style.display='none',3000);
+  const b=$('levelup-banner');
+  b.textContent='🎉 '+lv.emoji+' Level Up! You\'re now a '+lv.name+'!';
+  b.style.display='block';
+  setTimeout(()=>b.style.display='none',3500);
+  const plant=$('plant-svg').parentElement;
+  plant.style.animation='float 1s ease infinite';
+  setTimeout(()=>plant.style.animation='',3500);
+}
+
+function updateXPBar() {
+  const lv=getLevel(xp);
+  const next=LEVELS[lv.index+1];
+  const prevMin=LEVELS[lv.index].min;
+  const pct=next?Math.min(100,((xp-prevMin)/(next.min-prevMin))*100):100;
+  $('lvl-emoji').textContent=lv.emoji;
+  $('lvl-name').textContent=lv.name;
+  $('xp-label').textContent=xp+' XP'+(next?' / '+next.min:' · MAX');
+  $('xp-fill').style.width=pct+'%';
+}
+
+function updateStats() {
+  $('s-correct').textContent=stats.correct;
+  $('s-wrong').textContent=stats.wrong;
+  $('s-streak').textContent=streak;
+  const tot=stats.correct+stats.wrong;
+  $('s-acc').textContent=tot>0?Math.round(stats.correct/tot*100)+'%':'—';
+  const msg=$('streak-msg');
+  if(streak>=5){ msg.textContent='🔥🔥 ON FIRE! 1.5× XP bonus'; msg.style.display='block'; }
+  else if(streak>=3){ msg.textContent='🔥 Hot streak! 1.2× XP bonus'; msg.style.display='block'; }
+  else msg.style.display='none';
+  updateXPBar();
+}
+
+// ── Plant Drawing ─────────────────────────────────────────────────
+function updatePlant() {
+  const growth=Math.min(1,xp/700);
+  const g=growth;
+  const svg=$('plant-svg');
+  const cx=55, potTop=108;
+  const stemH=Math.min(1,g*2.2)*68;
+  const stemBase=potTop-2;
+  const stemTip=stemBase-stemH;
+  const lo=t=>Math.min(1,Math.max(0,(g-t)/0.12));
+  let h='';
+
+  h+=`<ellipse cx="${cx}" cy="${potTop+13}" rx="28" ry="6" fill="#92400e" opacity="0.15"/>`;
+  h+=`<path d="M${cx-25} ${potTop} Q${cx-27} ${potTop+27} ${cx-17} ${potTop+31} L${cx+17} ${potTop+31} Q${cx+27} ${potTop+27} ${cx+25} ${potTop}" fill="#d97706" stroke="#b45309" stroke-width="1"/>`;
+  h+=`<ellipse cx="${cx}" cy="${potTop}" rx="25" ry="5" fill="#f59e0b"/>`;
+  h+=`<ellipse cx="${cx}" cy="${potTop}" rx="21" ry="4" fill="#78350f" opacity="0.9"/>`;
+
+  if(g>0.04) h+=`<line x1="${cx}" y1="${stemBase}" x2="${cx}" y2="${stemBase-stemH}" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>`;
+  if(g>0.15) h+=`<path d="M${cx} ${stemBase-stemH*0.32} Q${cx-26} ${stemBase-stemH*0.48} ${cx-18} ${stemBase-stemH*0.64}" fill="#4ade80" stroke="#15803d" stroke-width="0.6" opacity="${lo(0.15)}"/>`;
+  if(g>0.30) h+=`<path d="M${cx} ${stemBase-stemH*0.50} Q${cx+26} ${stemBase-stemH*0.65} ${cx+17} ${stemBase-stemH*0.80}" fill="#4ade80" stroke="#15803d" stroke-width="0.6" opacity="${lo(0.30)}"/>`;
+  if(g>0.50) h+=`<path d="M${cx} ${stemBase-stemH*0.62} Q${cx-29} ${stemBase-stemH*0.78} ${cx-21} ${stemBase-stemH*0.94}" fill="#22c55e" stroke="#15803d" stroke-width="0.6" opacity="${lo(0.50)}"/>`;
+  if(g>0.65) h+=`<path d="M${cx} ${stemBase-stemH*0.76} Q${cx+28} ${stemBase-stemH*0.90} ${cx+19} ${stemBase-stemH*1.0}" fill="#22c55e" stroke="#15803d" stroke-width="0.6" opacity="${lo(0.65)}"/>`;
+  if(g>0.75&&g<=0.90) h+=`<ellipse cx="${cx}" cy="${stemTip-5}" rx="5" ry="7" fill="#86efac" stroke="#16a34a" stroke-width="0.8" opacity="${lo(0.75)}"/>`;
+  if(g>0.90){
+    [0,60,120,180,240,300].forEach(a=>{
+      const r=a*Math.PI/180, px=cx+Math.cos(r)*9, py=(stemTip-5)+Math.sin(r)*9;
+      h+=`<ellipse cx="${px}" cy="${py}" rx="5" ry="3.5" fill="#fbbf24" stroke="#f59e0b" stroke-width="0.5" opacity="${lo(0.90)}" transform="rotate(${a} ${px} ${py})"/>`;
+    });
+    h+=`<circle cx="${cx}" cy="${stemTip-5}" r="5" fill="#fde68a" stroke="#f59e0b" stroke-width="0.5" opacity="${lo(0.90)}"/>`;
+  }
+  svg.innerHTML=h;
+}
+
+// Init on load
+buildSetup();
+updatePlant();
+</script>
+</body>
+</html>
