@@ -384,14 +384,13 @@ function selectPaper(p,el) {
 }
 
 // ── Fetch Question (Gemini) ──────────────────────────────────────
-async function fetchQ(diff, history) {
+async function fetchQ(diff, history, retryCount=0) {
   const avoid = history.length ? ' Avoid topics: '+history.slice(-5).join(', ')+'.' : '';
   const prompt = `ICMAI CMA MCQ generator. Output ONLY JSON, no markdown:
 {"q":"question","o":{"A":"...","B":"...","C":"...","D":"..."},"ans":"A","why":"one sentence","t":"topic"}
 Level: ${selLevel} | Paper: ${selPaper} | Difficulty: ${diff}${avoid}
 Rules: plausible distractors, 40% numerical for costing/accounting papers, strict ICMAI syllabus.`;
 
-  // Use OpenAI-compatible Gemini endpoint - better CORS support
   const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
   let res, data;
   try {
@@ -413,6 +412,21 @@ Rules: plausible distractors, 40% numerical for costing/accounting papers, stric
     console.error('Fetch error:', e);
     showError('Network error: ' + e.message);
     return null;
+  }
+  // Handle rate limit - auto retry after delay
+  if(data.error && (data.error.code === 429 || (data.error.message && data.error.message.includes('quota')))) {
+    if(retryCount < 3) {
+      const delay = (retryCount + 1) * 15000; // 15s, 30s, 45s
+      const secs = delay / 1000;
+      $('loading-text').textContent = `Rate limit hit. Retrying in ${secs}s... (${retryCount+1}/3)`;
+      $('loading-box').style.display = 'block';
+      $('q-area').style.display = 'none';
+      await new Promise(r => setTimeout(r, delay));
+      return fetchQ(diff, history, retryCount + 1);
+    } else {
+      showError('Rate limit exceeded. Please wait 1 minute and try again.');
+      return null;
+    }
   }
   if(data.error) {
     console.error('API error:', JSON.stringify(data.error));
