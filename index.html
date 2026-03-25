@@ -391,15 +391,21 @@ async function fetchQ(diff, history) {
 Level: ${selLevel} | Paper: ${selPaper} | Difficulty: ${diff}${avoid}
 Rules: plausible distractors, 40% numerical for costing/accounting papers, strict ICMAI syllabus.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  // Use OpenAI-compatible Gemini endpoint - better CORS support
+  const url = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
   let res, data;
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 350 }
+        model: 'gemini-2.0-flash',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 350,
+        temperature: 0.7
       })
     });
     data = await res.json();
@@ -409,11 +415,11 @@ Rules: plausible distractors, 40% numerical for costing/accounting papers, stric
     return null;
   }
   if(data.error) {
-    console.error('Gemini error:', JSON.stringify(data.error));
+    console.error('API error:', JSON.stringify(data.error));
     showError('API Error: ' + (data.error.message || JSON.stringify(data.error)));
     return null;
   }
-  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const raw = data.choices?.[0]?.message?.content || '';
   try {
     const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
     return {
@@ -668,7 +674,6 @@ function updatePlant() {
 }
 
 // Init on load
-buildSetup();
 updatePlant();
 </script>
 </body>
