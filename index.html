@@ -168,6 +168,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   .xp-label { font-size: 10px; }
 }
 
+/* ── Neko launcher ── */
+#neko-launcher { position:fixed; bottom:16px; right:16px; width:36px; height:36px; cursor:pointer; z-index:1000; user-select:none; -webkit-user-select:none; opacity:0.7; transition:opacity 0.2s, transform 0.2s; }
+#neko-launcher:hover { opacity:1; transform:scale(1.15); }
+#neko-hint { position:fixed; bottom:56px; right:10px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:4px 8px; font-size:11px; color:#6b7280; white-space:nowrap; pointer-events:none; transition:opacity 0.4s; z-index:1000; }
+
 /* Tap highlight removal for mobile */
 button { -webkit-tap-highlight-color: transparent; }
 /* Prevent zoom on input focus iOS */
@@ -896,6 +901,72 @@ function cardReview() { fcReviewCount++; loadFlashcard(); }
 
 // Init on load
 updatePlant();
+</script>
+
+<!-- ── Neko cat ─────────────────────────────────── -->
+<div id="neko-hint">🐱 Click me!</div>
+<!-- 32×32 pixel-art cat sprite as inline SVG stand-in; replaced by neko.js canvas -->
+<div id="neko-launcher" title="Click to wake the cat!" onclick="nekoClick()">
+  <svg viewBox="0 0 32 32" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+    <!-- simple pixel cat face -->
+    <rect width="32" height="32" rx="6" fill="#f3f4f6"/>
+    <text x="4" y="26" font-size="22">🐱</text>
+  </svg>
+</div>
+
+<script src="https://louisabraham.github.io/nekojs/neko.js"></script>
+<script>
+let neko = null;
+let nekoActive = false;
+let hintDismissed = false;
+
+function nekoClick() {
+  const hint = document.getElementById('neko-hint');
+
+  if (!nekoActive) {
+    // First click — create and start neko
+    const launcher = document.getElementById('neko-launcher');
+    const rect = launcher.getBoundingClientRect();
+    neko = createNeko({
+      speed: 20,
+      behaviorMode: 0,           // chase mode — runs toward where you click
+      allowBehaviorChange: false,
+      startX: rect.left,
+      startY: rect.top,
+    });
+    neko.start();
+    nekoActive = true;
+
+    // Dismiss hint
+    hint.style.opacity = '0';
+    setTimeout(() => hint.style.display = 'none', 400);
+
+    // Change launcher to "put to sleep" icon
+    launcher.title = 'Click to put cat to sleep';
+    launcher.querySelector('text').textContent = '😴';
+  } else {
+    // Second click — stop neko
+    neko.stop();
+    nekoActive = false;
+    const launcher = document.getElementById('neko-launcher');
+    launcher.title = 'Click to wake the cat!';
+    launcher.querySelector('text').textContent = '🐱';
+  }
+}
+
+// Let cat run toward wherever the user clicks on the page
+document.addEventListener('click', function(e) {
+  if (!nekoActive || !neko) return;
+  // Ignore clicks on the launcher itself
+  if (document.getElementById('neko-launcher').contains(e.target)) return;
+  neko.runTowards(e.clientX, e.clientY);
+});
+
+// Fade out hint after 4s automatically
+setTimeout(() => {
+  const hint = document.getElementById('neko-hint');
+  if (hint) { hint.style.opacity = '0'; setTimeout(() => hint.style.display='none', 400); }
+}, 4000);
 </script>
 </body>
 </html>
