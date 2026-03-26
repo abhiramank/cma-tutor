@@ -315,6 +315,58 @@ const LEVELS = [
 const XP_TABLE = {Easy:10, Medium:20, Hard:35};
 const TOTAL_TIME = 100;
 
+// ── IMA Learning Outcome Statements (LOS) per section ────────────
+const SECTION_LOS = {
+  "Section A: External Financial Reporting Decisions (15%)": {
+    part:"Part 1",
+    topics:"Financial statements under US GAAP (income statement, balance sheet, cash flow statement, stockholders' equity); revenue recognition (ASC 606 five-step model); inventory valuation (FIFO, LIFO, weighted-average, lower of cost or NRV); PP&E capitalization and depreciation methods (straight-line, double-declining, units-of-production); lease classification (ASC 842 operating vs finance leases); deferred tax assets/liabilities; recognition, measurement, valuation, and disclosure principles."
+  },
+  "Section B: Planning, Budgeting & Forecasting (20%)": {
+    part:"Part 1",
+    topics:"Master budget components (sales budget, production budget, direct materials, direct labor, overhead, SG&A, cash budget, pro forma statements); static vs flexible budgets; variance analysis from budgets; zero-based budgeting; rolling forecasts; top-down vs bottom-up budgeting; forecasting techniques (regression analysis, moving averages, exponential smoothing); learning curve effects on cost estimates."
+  },
+  "Section C: Performance Management (20%)": {
+    part:"Part 1",
+    topics:"Standard costing systems; variance analysis (direct materials price/quantity, direct labor rate/efficiency, variable/fixed overhead spending/efficiency/volume variances); responsibility accounting (cost centers, revenue centers, profit centers, investment centers); ROI, RI, EVA for investment centers; Balanced Scorecard (four perspectives); KPIs; transfer pricing methods (market-based, cost-based, negotiated)."
+  },
+  "Section D: Cost Management (15%)": {
+    part:"Part 1",
+    topics:"Cost behavior (fixed, variable, mixed, step costs); cost-volume relationships; cost allocation methods (direct, step-down, reciprocal); activity-based costing (ABC) vs traditional costing; job-order costing vs process costing (FIFO and weighted-average methods); variable costing vs absorption costing and income differences; joint product and by-product costing; target costing; life-cycle costing; throughput costing."
+  },
+  "Section E: Internal Controls (15%)": {
+    part:"Part 1",
+    topics:"COSO Internal Control — Integrated Framework (five components: control environment, risk assessment, control activities, information & communication, monitoring); Sarbanes-Oxley (SOX) Section 302 and 404 requirements; segregation of duties; preventive, detective, and corrective controls; IT general controls and application controls; enterprise risk management (ERM); internal audit role; fraud risk factors and prevention."
+  },
+  "Section F: Technology & Analytics (15%)": {
+    part:"Part 1",
+    topics:"Data governance and data integrity; types of analytics (descriptive, diagnostic, predictive, prescriptive); data visualization best practices; ERP systems and their role in management accounting; big data characteristics (volume, velocity, variety); emerging technologies (AI/ML, blockchain, robotic process automation); cybersecurity risks; cloud computing implications for internal controls."
+  },
+  "Section A: Financial Statement Analysis (20%)": {
+    part:"Part 2",
+    topics:"Horizontal and vertical (common-size) analysis; liquidity ratios (current, quick, cash); activity/efficiency ratios (inventory turnover, DSO, asset turnover); leverage/solvency ratios (debt-to-equity, interest coverage, debt-to-assets); profitability ratios (gross margin, operating margin, net margin, ROA, ROE); DuPont analysis (three-factor and five-factor); market value ratios (P/E, EV/EBITDA, price-to-book); earnings quality assessment; limitations of ratio analysis."
+  },
+  "Section B: Corporate Finance (25%)": {
+    part:"Part 2",
+    topics:"Cost of capital (WACC components: cost of debt, cost of preferred, CAPM for cost of equity); capital structure theory (Modigliani-Miller propositions, trade-off theory, pecking order); dividend policy (dividend irrelevance, clientele effect, signaling); working capital management (cash conversion cycle, optimal cash levels, short-term financing); accounts receivable and inventory management; short-term financing (commercial paper, lines of credit, factoring); international finance (exchange rate risk, transaction vs translation exposure)."
+  },
+  "Section C: Decision Analysis (25%)": {
+    part:"Part 2",
+    topics:"CVP analysis (break-even in units and dollars, margin of safety, operating leverage, contribution margin ratio); relevant costing for decisions (make vs buy, keep vs drop, special orders, sell-or-process-further); product mix optimization with constraints (linear programming concepts); pricing strategies (cost-plus, target costing, penetration, skimming, price discrimination); expected value and decision trees; sensitivity analysis."
+  },
+  "Section D: Risk Management (10%)": {
+    part:"Part 2",
+    topics:"Enterprise risk management (ERM) frameworks; risk identification, assessment (likelihood and impact), and prioritization; risk response strategies (avoid, reduce, share/transfer, accept); financial risk types (market risk, credit risk, liquidity risk, operational risk); hedging instruments (forwards, futures, options, swaps) and their accounting treatment; business continuity planning; risk-adjusted return metrics."
+  },
+  "Section E: Investment Decisions (10%)": {
+    part:"Part 2",
+    topics:"Capital budgeting process and project selection; net present value (NPV) and decision rules; internal rate of return (IRR) and modified IRR (MIRR); payback period and discounted payback; profitability index; incremental cash flow estimation (sunk costs, opportunity costs, cannibalization, working capital changes, terminal cash flows); risk analysis in capital budgeting (sensitivity, scenario, simulation); real options in capital projects."
+  },
+  "Section F: Professional Ethics (10%)": {
+    part:"Part 2",
+    topics:"IMA Statement of Ethical Professional Practice (four principles: honesty, fairness, objectivity, responsibility; four standards: competence, confidentiality, integrity, credibility); ethical conflict resolution process; corporate governance structures (board roles, audit committee, oversight); fraud types (asset misappropriation, financial statement fraud, corruption); whistleblower protections and responsibilities; ethical decision-making frameworks."
+  },
+};
+
 // ── State ────────────────────────────────────────────────────────
 let apiKey="", selLevel="", selPaper="", difficulty="Medium";
 let stats={correct:0,wrong:0,skipped:0}, streak=0, xp=0, qNum=0;
@@ -379,11 +431,18 @@ function selectPaper(p,el) {
 
 // ── Fetch Question (Gemini) ──────────────────────────────────────
 async function fetchQ(diff, history, retryCount=0) {
-  const avoid = history.length ? ' Avoid topics: '+history.slice(-5).join(', ')+'.' : '';
+  const avoid = history.length ? ' Avoid repeating these recent topics: '+history.slice(-5).join(', ')+'.' : '';
+  const los = SECTION_LOS[selPaper];
+  const losContext = los ? `\nKey testable topics for this section: ${los.topics}` : '';
   const prompt = `Generate exactly ONE scenario-based MCQ for the IMA CMA US (Certified Management Accountant) exam. Output a single JSON object only:
-{"q":"scenario-based question text","o":{"A":"option","B":"option","C":"option","D":"option"},"ans":"A","why":"one sentence explanation using US GAAP or management accounting terminology","t":"topic name"}
-Exam Part: ${selLevel} | Section: ${selPaper} | Difficulty: ${diff}${avoid}
-Requirements: Present a realistic US business scenario (e.g. a company facing a decision, analysis, or reporting issue). Use US GAAP terminology. Test application and analysis, not just memorization. Align question depth to difficulty: Easy=recall/basic application, Medium=multi-step analysis, Hard=complex scenario with judgment.
+{"q":"scenario-based question text","o":{"A":"option","B":"option","C":"option","D":"option"},"ans":"A","why":"concise explanation using precise US GAAP or IMA management accounting terminology","t":"specific topic name"}
+Exam Part: ${selLevel} | Section: ${selPaper} | Difficulty: ${diff}${losContext}${avoid}
+Requirements:
+- Open with a realistic US business scenario (name a company, give numbers, describe the situation)
+- All four options must be plausible; distractors should reflect common real-world misconceptions
+- Easy: test a single concept or definition; Medium: require 2-3 step analysis or calculation; Hard: integrate multiple concepts with judgment under ambiguity
+- Use US GAAP standards, IMA terminology, and realistic dollar amounts
+- The "why" must explain why the correct answer is right AND briefly why the main distractor is wrong
 Important: Output ONLY the JSON object. No other text before or after.`;
 
   const url = 'https://api.groq.com/openai/v1/chat/completions';
@@ -396,12 +455,12 @@ Important: Output ONLY the JSON object. No other text before or after.`;
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
+        model: 'llama-3.3-70b-versatile',
         messages: [
           { role: 'system', content: 'You are a JSON generator specializing in IMA CMA US exam questions. Output ONLY a single valid JSON object. No extra text, no multiple objects, no markdown.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 500,
+        max_tokens: 700,
         temperature: 0.3
       })
     });
