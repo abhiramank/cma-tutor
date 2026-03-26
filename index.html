@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CMA India MCQ Tutor</title>
+<title>CMA US MCQ Tutor</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; color: #111827; min-height: 100vh; }
@@ -180,8 +180,8 @@ input { font-size: 16px !important; }
 <div id="page-apikey" class="page active">
   <div class="card">
     <span class="key-icon">🌱</span>
-    <div class="key-title">CMA India MCQ Tutor</div>
-    <div class="key-desc">Enter your free Groq API key to generate unlimited exam questions instantly.</div>
+    <div class="key-title">CMA US MCQ Tutor</div>
+    <div class="key-desc">Enter your free Groq API key to generate unlimited IMA CMA exam questions instantly.</div>
     <input class="key-input" id="key-input" type="password" placeholder="gsk_..." autocomplete="off" />
     <div class="key-error" id="key-error">Please enter a valid API key</div>
     <div class="key-hint">
@@ -198,17 +198,17 @@ input { font-size: 16px !important; }
   <div class="card">
     <div class="setup-hero">
       <span class="icon">🌱</span>
-      <h1>Pick your paper and grow</h1>
+      <h1>Pick your part and grow</h1>
       <p>Answer correctly to grow your plant from seedling to flower</p>
     </div>
 
     <div class="section">
-      <div class="lbl">Exam Level</div>
+      <div class="lbl">Exam Part</div>
       <div class="chip-row" id="level-chips"></div>
     </div>
 
     <div class="section" id="paper-section" style="display:none">
-      <div class="lbl">Paper</div>
+      <div class="lbl">Section</div>
       <div class="paper-list" id="paper-list"></div>
     </div>
 
@@ -287,27 +287,21 @@ input { font-size: 16px !important; }
 <script>
 // ── Constants ────────────────────────────────────────────────────
 const PAPERS = {
-  Foundation: [
-    "Paper 1: Business Laws & Communication",
-    "Paper 2: Financial & Cost Accounting",
-    "Paper 3: Business Mathematics & Statistics",
-    "Paper 4: Business Economics & Management",
+  "Part 1": [
+    "Section A: External Financial Reporting Decisions (15%)",
+    "Section B: Planning, Budgeting & Forecasting (20%)",
+    "Section C: Performance Management (20%)",
+    "Section D: Cost Management (15%)",
+    "Section E: Internal Controls (15%)",
+    "Section F: Technology & Analytics (15%)",
   ],
-  Intermediate: [
-    "Paper 5: Financial Accounting","Paper 6: Laws & Ethics",
-    "Paper 7: Direct Taxation","Paper 8: Cost Accounting",
-    "Paper 9: Operations & Strategic Management",
-    "Paper 10: Cost & Management Accounting",
-    "Paper 11: Indirect Taxation (GST)","Paper 12: Company Accounts & Audit",
-  ],
-  Final: [
-    "Paper 13: Corporate Laws & Compliance",
-    "Paper 14: Strategic Financial Management",
-    "Paper 15: Direct Tax & International Tax",
-    "Paper 16: Strategic Cost Management","Paper 17: Cost & Management Audit",
-    "Paper 18: Corporate Financial Reporting",
-    "Paper 19: Indirect Tax Laws & Practice",
-    "Paper 20: Strategic Performance Management",
+  "Part 2": [
+    "Section A: Financial Statement Analysis (20%)",
+    "Section B: Corporate Finance (25%)",
+    "Section C: Decision Analysis (25%)",
+    "Section D: Risk Management (10%)",
+    "Section E: Investment Decisions (10%)",
+    "Section F: Professional Ethics (10%)",
   ],
 };
 const LEVELS = [
@@ -386,9 +380,10 @@ function selectPaper(p,el) {
 // ── Fetch Question (Gemini) ──────────────────────────────────────
 async function fetchQ(diff, history, retryCount=0) {
   const avoid = history.length ? ' Avoid topics: '+history.slice(-5).join(', ')+'.' : '';
-  const prompt = `Generate exactly ONE MCQ for ICMAI CMA exam. Output a single JSON object only:
-{"q":"question text","o":{"A":"option","B":"option","C":"option","D":"option"},"ans":"A","why":"one sentence explanation","t":"topic name"}
-Level: ${selLevel} | Paper: ${selPaper} | Difficulty: ${diff}${avoid}
+  const prompt = `Generate exactly ONE scenario-based MCQ for the IMA CMA US (Certified Management Accountant) exam. Output a single JSON object only:
+{"q":"scenario-based question text","o":{"A":"option","B":"option","C":"option","D":"option"},"ans":"A","why":"one sentence explanation using US GAAP or management accounting terminology","t":"topic name"}
+Exam Part: ${selLevel} | Section: ${selPaper} | Difficulty: ${diff}${avoid}
+Requirements: Present a realistic US business scenario (e.g. a company facing a decision, analysis, or reporting issue). Use US GAAP terminology. Test application and analysis, not just memorization. Align question depth to difficulty: Easy=recall/basic application, Medium=multi-step analysis, Hard=complex scenario with judgment.
 Important: Output ONLY the JSON object. No other text before or after.`;
 
   const url = 'https://api.groq.com/openai/v1/chat/completions';
@@ -403,7 +398,7 @@ Important: Output ONLY the JSON object. No other text before or after.`;
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         messages: [
-          { role: 'system', content: 'You are a JSON generator. Output ONLY a single valid JSON object. No extra text, no multiple objects, no markdown.' },
+          { role: 'system', content: 'You are a JSON generator specializing in IMA CMA US exam questions. Output ONLY a single valid JSON object. No extra text, no multiple objects, no markdown.' },
           { role: 'user', content: prompt }
         ],
         max_tokens: 500,
