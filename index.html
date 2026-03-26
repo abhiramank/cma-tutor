@@ -288,6 +288,7 @@ input { font-size: 16px !important; }
     <!-- Q header -->
     <div class="q-header">
       <div class="q-meta">
+        <button class="btn-back" onclick="showPage('page-setup')" style="margin-right:6px">← Back</button>
         <span class="q-num" id="q-num">Q1</span>
         <span class="diff-badge diff-Medium" id="diff-badge">Medium</span>
         <span style="font-size:11px;color:#9ca3af" id="paper-short"></span>
@@ -907,11 +908,7 @@ updatePlant();
 <div id="neko-hint">🐱 Click me!</div>
 <!-- 32×32 pixel-art cat sprite as inline SVG stand-in; replaced by neko.js canvas -->
 <div id="neko-launcher" title="Click to wake the cat!" onclick="nekoClick()">
-  <svg viewBox="0 0 32 32" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-    <!-- simple pixel cat face -->
-    <rect width="32" height="32" rx="6" fill="#f3f4f6"/>
-    <text x="4" y="26" font-size="22">🐱</text>
-  </svg>
+  <span id="neko-icon" style="font-size:28px;line-height:36px;display:block;text-align:center">🐱</span>
 </div>
 
 <script src="https://louisabraham.github.io/nekojs/neko.js"></script>
@@ -943,14 +940,14 @@ function nekoClick() {
 
     // Change launcher to "put to sleep" icon
     launcher.title = 'Click to put cat to sleep';
-    launcher.querySelector('text').textContent = '😴';
+    document.getElementById('neko-icon').textContent = '😴';
   } else {
     // Second click — stop neko
     neko.stop();
     nekoActive = false;
     const launcher = document.getElementById('neko-launcher');
     launcher.title = 'Click to wake the cat!';
-    launcher.querySelector('text').textContent = '🐱';
+    document.getElementById('neko-icon').textContent = '🐱';
   }
 }
 
