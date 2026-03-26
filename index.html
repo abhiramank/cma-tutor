@@ -172,6 +172,37 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 button { -webkit-tap-highlight-color: transparent; }
 /* Prevent zoom on input focus iOS */
 input { font-size: 16px !important; }
+
+/* ── Flashcard styles ── */
+.btn-secondary { width:100%; padding:12px; border-radius:8px; border:1.5px solid #16a34a; background:#fff; color:#16a34a; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.15s; }
+.btn-secondary:disabled { opacity:0.35; cursor:not-allowed; }
+.btn-secondary:hover:not(:disabled) { background:#f0fdf4; }
+.btn-back { padding:6px 12px; border-radius:8px; border:1px solid #e5e7eb; background:transparent; color:#6b7280; font-size:13px; cursor:pointer; }
+.btn-back:hover { background:#f9fafb; }
+.fc-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.fc-counters { font-size:12px; color:#6b7280; }
+.fc-hint { font-size:12px; color:#9ca3af; text-align:center; margin-bottom:10px; }
+.fc-scene { perspective:1000px; width:100%; min-height:220px; }
+.fc-card { width:100%; min-height:220px; position:relative; transform-style:preserve-3d; transition:transform 0.5s cubic-bezier(0.4,0,0.2,1); cursor:pointer; }
+.fc-card.flipped { transform:rotateY(180deg); }
+.fc-face { position:absolute; top:0; left:0; right:0; min-height:220px; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:12px; padding:22px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.fc-front { background:#fff; border:2px solid #e5e7eb; }
+.fc-back { background:#f0fdf4; border:2px solid #bbf7d0; transform:rotateY(180deg); }
+.fc-label { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:#9ca3af; margin-bottom:12px; }
+.fc-term { font-size:17px; font-weight:600; color:#111827; line-height:1.5; }
+.fc-explanation { font-size:13px; color:#374151; line-height:1.75; text-align:left; }
+.fc-topic { font-size:10px; color:#6b7280; margin-top:12px; font-style:italic; }
+.fc-actions { display:flex; gap:8px; margin-top:14px; }
+.btn-review { flex:1; padding:11px; border-radius:8px; border:1px solid #d1d5db; background:transparent; color:#6b7280; font-size:14px; cursor:pointer; }
+.btn-review:hover { background:#f9fafb; }
+.btn-known { flex:1; padding:11px; border-radius:8px; border:none; background:#16a34a; color:#fff; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-known:hover { opacity:0.9; }
+.fc-progress-bar { height:4px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:16px; }
+.fc-progress-fill { height:100%; background:linear-gradient(90deg,#16a34a,#22c55e); border-radius:99px; transition:width 0.4s ease; }
+@media (max-width:480px) {
+  .fc-term { font-size:15px; }
+  .fc-explanation { font-size:12px; }
+}
 </style>
 </head>
 <body>
@@ -212,7 +243,10 @@ input { font-size: 16px !important; }
       <div class="paper-list" id="paper-list"></div>
     </div>
 
-    <button class="btn-primary" id="start-btn" disabled onclick="startQuiz()">Start practice →</button>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-primary"   id="start-btn"  disabled onclick="startQuiz()">Start MCQ Practice →</button>
+      <button class="btn-secondary" id="flash-btn"  disabled onclick="startFlashcards()">Study Flashcards →</button>
+    </div>
   </div>
 </div>
 
@@ -277,6 +311,53 @@ input { font-size: 16px !important; }
         <div class="rationale-text" id="r-text"></div>
       </div>
       <div class="action-row" id="action-row"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Flashcards Page ──────────────────────────── -->
+<div id="page-flashcards" class="page">
+  <div class="card">
+
+    <div class="fc-header">
+      <button class="btn-back" onclick="showPage('page-setup')">← Back</button>
+      <span style="font-size:12px;color:#6b7280" id="fc-progress">Card 1</span>
+      <div class="fc-counters">
+        <span style="color:#16a34a;font-weight:600" id="fc-known-count">0</span> known ·
+        <span style="color:#d97706;font-weight:600" id="fc-review-count">0</span> review
+      </div>
+    </div>
+
+    <div class="fc-progress-bar"><div class="fc-progress-fill" id="fc-prog-fill" style="width:0%"></div></div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px;text-align:center" id="fc-section-lbl"></div>
+
+    <!-- Loading -->
+    <div class="loading-box" id="fc-loading" style="display:block">
+      <div class="spinner"></div>
+      <div class="loading-text" id="fc-loading-text">Generating flashcard…</div>
+    </div>
+
+    <!-- Card -->
+    <div id="fc-area" style="display:none">
+      <p class="fc-hint" id="fc-hint">Tap the card to reveal the explanation</p>
+      <div class="fc-scene" onclick="flipCard()">
+        <div class="fc-card" id="fc-card">
+          <div class="fc-face fc-front">
+            <div class="fc-label">Concept</div>
+            <div class="fc-term" id="fc-front-text"></div>
+          </div>
+          <div class="fc-face fc-back">
+            <div class="fc-label">Explanation</div>
+            <div class="fc-explanation" id="fc-back-text"></div>
+            <div class="fc-topic" id="fc-topic-lbl"></div>
+          </div>
+        </div>
+      </div>
+      <div class="fc-actions" id="fc-actions" style="display:none">
+        <button class="btn-review" onclick="cardReview()">↩ Review Again</button>
+        <button class="btn-known"  onclick="cardKnown()">Got it ✓</button>
+      </div>
     </div>
 
   </div>
@@ -427,6 +508,7 @@ function selectPaper(p,el) {
   document.querySelectorAll('.paper-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
   $('start-btn').disabled=false;
+  $('flash-btn').disabled=false;
 }
 
 // ── Fetch Question (Gemini) ──────────────────────────────────────
@@ -723,6 +805,94 @@ function updatePlant() {
   }
   svg.innerHTML=h;
 }
+
+// ── Flashcards ───────────────────────────────────────────────────
+let fcHistory=[], fcKnownCount=0, fcReviewCount=0, fcNum=0, fcCurrent=null, fcFlipped=false;
+
+async function fetchFlashcard(history) {
+  const los = SECTION_LOS[selPaper];
+  const avoid = history.length ? ' Avoid these recent topics: '+history.slice(-5).join(', ')+'.' : '';
+  const losContext = los ? `\nKey testable topics for this section: ${los.topics}` : '';
+  const prompt = `Generate ONE flashcard for IMA CMA US exam study. Output a single JSON object only:
+{"front":"key concept, term, or 'What is...?' question (max 15 words)","back":"thorough 3-5 sentence explanation covering: precise definition, how it works in practice, any key formula or rule, and a brief real-world example","t":"specific topic name"}
+Exam Part: ${selLevel} | Section: ${selPaper}${losContext}${avoid}
+Focus on high-yield, frequently-tested concepts. The explanation must be exam-ready: accurate, complete, and use IMA/US GAAP terminology.
+Important: Output ONLY the JSON object. No other text.`;
+
+  let res, data;
+  try {
+    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body:JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[
+          {role:'system', content:'You are a JSON generator for IMA CMA US exam flashcards. Output ONLY a single valid JSON object. No extra text, no markdown.'},
+          {role:'user', content:prompt}
+        ],
+        max_tokens:450, temperature:0.4
+      })
+    });
+    data = await res.json();
+  } catch(e) { return null; }
+  if(data.error) return null;
+  const raw = data.choices?.[0]?.message?.content || '';
+  try {
+    const p = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    return { front:p.front, back:p.back, topic:p.t||p.topic };
+  } catch { return null; }
+}
+
+function startFlashcards() {
+  fcHistory=[]; fcKnownCount=0; fcReviewCount=0; fcNum=0; fcCurrent=null; fcFlipped=false;
+  showPage('page-flashcards');
+  $('fc-section-lbl').textContent = selLevel + ' · ' + selPaper;
+  loadFlashcard();
+}
+
+async function loadFlashcard() {
+  fcFlipped=false;
+  $('fc-card').classList.remove('flipped');
+  $('fc-area').style.display='none';
+  $('fc-loading').style.display='block';
+  $('fc-loading-text').textContent = fcNum===0 ? 'Generating your first flashcard…' : 'Loading next card…';
+
+  const card = await fetchFlashcard(fcHistory);
+  $('fc-loading').style.display='none';
+
+  if(!card){
+    $('fc-loading-text').textContent='Failed to load. Check your API key and try again.';
+    $('fc-loading').style.display='block'; return;
+  }
+
+  fcCurrent=card; fcNum++;
+  if(card.topic) fcHistory=[...fcHistory.slice(-9), card.topic];
+
+  $('fc-front-text').textContent = card.front;
+  $('fc-back-text').textContent  = card.back;
+  $('fc-topic-lbl').textContent  = card.topic ? '📌 '+card.topic : '';
+  $('fc-actions').style.display='none';
+  $('fc-hint').style.display='block';
+  $('fc-progress').textContent='Card '+fcNum;
+  $('fc-known-count').textContent=fcKnownCount;
+  $('fc-review-count').textContent=fcReviewCount;
+  const total=fcKnownCount+fcReviewCount;
+  $('fc-prog-fill').style.width=(total>0?Math.round(fcKnownCount/total*100):0)+'%';
+  $('fc-area').style.display='block';
+}
+
+function flipCard() {
+  if(!fcCurrent) return;
+  fcFlipped=!fcFlipped;
+  $('fc-card').classList.toggle('flipped', fcFlipped);
+  if(fcFlipped){
+    $('fc-actions').style.display='flex';
+    $('fc-hint').style.display='none';
+  }
+}
+
+function cardKnown()  { fcKnownCount++;  loadFlashcard(); }
+function cardReview() { fcReviewCount++; loadFlashcard(); }
 
 // Init on load
 updatePlant();
