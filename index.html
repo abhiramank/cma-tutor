@@ -166,6 +166,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   /* XP */
   .level-info { font-size: 12px; }
   .xp-label { font-size: 10px; }
+
+  /* Flashcards Mobile */
+  .fc-scene { min-height: 280px; }
+  .fc-face { min-height: 280px; padding: 16px; }
+  .fc-term { font-size: 15px; }
+  .fc-explanation { font-size: 12px; line-height: 1.6; }
+  .fc-header { margin-bottom: 12px; }
+
+  /* Neko Mobile */
+  #neko-launcher { width: 48px; height: 48px; bottom: 20px; right: 20px; opacity: 0.9; }
+  #neko-icon { font-size: 32px; line-height: 48px; }
+  #neko-hint { bottom: 74px; font-size: 10px; }
 }
 
 /* ── Neko launcher ── */
@@ -258,6 +270,13 @@ input { font-size: 16px !important; }
         <button class="chip diff-chip active" onclick="selectDifficulty('Easy', this)" style="border-bottom: 3px solid #16a34a">Easy</button>
         <button class="chip diff-chip" onclick="selectDifficulty('Medium', this)" style="border-bottom: 3px solid #fbbf24">Medium</button>
         <button class="chip diff-chip" onclick="selectDifficulty('Hard', this)" style="border-bottom: 3px solid #dc2626">Hard</button>
+      </div>
+    </div>
+
+    <div class="section" id="settings-section" style="display:none">
+      <div class="lbl">Settings</div>
+      <div class="chip-row">
+        <button class="chip active" id="timer-toggle" onclick="toggleTimer()">Timer: ON</button>
       </div>
     </div>
 
@@ -475,7 +494,7 @@ const SECTION_LOS = {
 };
 
 // ── State ────────────────────────────────────────────────────────
-let apiKey="", selLevel="", selPaper="", difficulty="Medium";
+let apiKey="", selLevel="", selPaper="", difficulty="Medium", useTimer=true;
 let stats={correct:0,wrong:0,skipped:0}, streak=0, xp=0, qNum=0;
 let currentQ=null, selected=null, submitted=false;
 let timeLeft=TOTAL_TIME, timerInterval=null;
@@ -536,12 +555,20 @@ function selectPaper(p,el) {
   $('start-btn').disabled=false;
   $('flash-btn').disabled=false;
   $('diff-section').style.display='block';
+  $('settings-section').style.display='block';
 }
 
 function selectDifficulty(d, el) {
   difficulty = d;
   document.querySelectorAll('.diff-chip').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
+}
+
+function toggleTimer() {
+  useTimer = !useTimer;
+  const btn = $('timer-toggle');
+  btn.textContent = useTimer ? 'Timer: ON' : 'Timer: OFF';
+  btn.classList.toggle('active', useTimer);
 }
 
 // ── Fetch Question (Gemini) ──────────────────────────────────────
@@ -620,6 +647,10 @@ function startQuiz() {
   topicsHistory=[]; prefetched=null;
   showPage('page-quiz');
   $('paper-short').textContent = selPaper.split(':')[0];
+  
+  // Show/Hide timer UI
+  document.querySelector('.timer-row').style.display = useTimer ? 'flex' : 'none';
+  
   updatePlant(); updateStats();
   loadQuestion(true);
 }
@@ -642,7 +673,7 @@ async function loadQuestion(isFirst=false) {
   const nh = q.topic ? [...topicsHistory.slice(-9), q.topic] : topicsHistory;
   prefetchNext(difficulty, nh);
   renderQuestion();
-  startTimer();
+  if(useTimer) startTimer();
 }
 
 // ── Render ───────────────────────────────────────────────────────
