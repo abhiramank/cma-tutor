@@ -205,10 +205,14 @@ input { font-size: 16px !important; }
 .fc-progress-bar { height:4px; background:#e5e7eb; border-radius:99px; overflow:hidden; margin-bottom:16px; }
 .fc-progress-fill { height:100%; background:linear-gradient(90deg,#16a34a,#22c55e); border-radius:99px; transition:width 0.4s ease; }
 @media (max-width:480px) {
-  .fc-term { font-size:15px; }
-  .fc-explanation { font-size:12px; }
-}
-</style>
+  .fc-term { font-size: 15px; }
+  .fc-explanation { font-size: 12px; }
+  }
+  .fc-front.diff-Easy   { border-color: #16a34a; }
+  .fc-front.diff-Medium { border-color: #fbbf24; }
+  .fc-front.diff-Hard   { border-color: #dc2626; }
+  .diff-chip.active { color: #111827; }
+  </style>
 </head>
 <body>
 
@@ -246,6 +250,15 @@ input { font-size: 16px !important; }
     <div class="section" id="paper-section" style="display:none">
       <div class="lbl">Section</div>
       <div class="paper-list" id="paper-list"></div>
+    </div>
+
+    <div class="section" id="diff-section" style="display:none">
+      <div class="lbl">Difficulty</div>
+      <div class="chip-row">
+        <button class="chip diff-chip active" onclick="selectDifficulty('Easy', this)" style="border-bottom: 3px solid #16a34a">Easy</button>
+        <button class="chip diff-chip" onclick="selectDifficulty('Medium', this)" style="border-bottom: 3px solid #fbbf24">Medium</button>
+        <button class="chip diff-chip" onclick="selectDifficulty('Hard', this)" style="border-bottom: 3px solid #dc2626">Hard</button>
+      </div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -332,7 +345,10 @@ input { font-size: 16px !important; }
 
     <div class="fc-header">
       <button class="btn-back" onclick="showPage('page-setup')">← Back</button>
-      <span style="font-size:12px;color:#6b7280" id="fc-progress">Card 1</span>
+      <div style="display:flex; flex-direction:column; align-items:center">
+        <span style="font-size:12px;color:#6b7280" id="fc-progress">Card 1</span>
+        <span class="diff-badge diff-Medium" id="fc-diff-badge" style="font-size:10px; padding:1px 6px; margin-top:2px">Medium</span>
+      </div>
       <div class="fc-counters">
         <span style="color:#16a34a;font-weight:600" id="fc-known-count">0</span> known ·
         <span style="color:#d97706;font-weight:600" id="fc-review-count">0</span> review
@@ -519,6 +535,13 @@ function selectPaper(p,el) {
   el.classList.add('active');
   $('start-btn').disabled=false;
   $('flash-btn').disabled=false;
+  $('diff-section').style.display='block';
+}
+
+function selectDifficulty(d, el) {
+  difficulty = d;
+  document.querySelectorAll('.diff-chip').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
 }
 
 // ── Fetch Question (Gemini) ──────────────────────────────────────
@@ -593,7 +616,8 @@ function showError(msg) {
 
 function startQuiz() {
   stats={correct:0,wrong:0,skipped:0}; streak=0; xp=0; qNum=0;
-  difficulty='Medium'; topicsHistory=[]; prefetched=null;
+  // Use selected difficulty as starting point for quiz
+  topicsHistory=[]; prefetched=null;
   showPage('page-quiz');
   $('paper-short').textContent = selPaper.split(':')[0];
   updatePlant(); updateStats();
@@ -820,13 +844,18 @@ function updatePlant() {
 let fcHistory=[], fcKnownCount=0, fcReviewCount=0, fcNum=0, fcCurrent=null, fcFlipped=false;
 
 async function fetchFlashcard(history) {
+  const diff = difficulty;
   const los = SECTION_LOS[selPaper];
-  const avoid = history.length ? ' Avoid these recent topics: '+history.slice(-5).join(', ')+'.' : '';
+  const avoid = history.length ? ' CRITICAL: Do not repeat or generate anything similar to these recent terms/topics: ' + history.join(', ') + '.' : '';
   const losContext = los ? `\nKey testable topics for this section: ${los.topics}` : '';
-  const prompt = `Generate ONE flashcard for IMA CMA US exam study. Output a single JSON object only:
-{"front":"key concept, term, or 'What is...?' question (max 15 words)","back":"thorough 3-5 sentence explanation covering: precise definition, how it works in practice, any key formula or rule, and a brief real-world example","t":"specific topic name"}
-Exam Part: ${selLevel} | Section: ${selPaper}${losContext}${avoid}
-Focus on high-yield, frequently-tested concepts. The explanation must be exam-ready: accurate, complete, and use IMA/US GAAP terminology.
+  const prompt = `Generate ONE unique and concise flashcard for IMA CMA US exam study at ${diff} difficulty. Output a single JSON object only:
+{"front":"key concept, term, or 'What is...?' question (max 12 words)","back":"subtle, high-impact explanation (max 2 sentences). Focus on clarity and core understanding.","t":"specific topic name"}
+Exam Part: ${selLevel} | Section: ${selPaper} | Difficulty: ${diff}${losContext}${avoid}
+Requirements:
+- Ensure the concept is DIFFERENT from the ones mentioned in the avoid list.
+- Easy: fundamental definitions.
+- Medium: application and relationships.
+- Hard: complex interpretations and pitfalls.
 Important: Output ONLY the JSON object. No other text.`;
 
   let res, data;
@@ -837,10 +866,10 @@ Important: Output ONLY the JSON object. No other text.`;
       body:JSON.stringify({
         model:'llama-3.3-70b-versatile',
         messages:[
-          {role:'system', content:'You are a JSON generator for IMA CMA US exam flashcards. Output ONLY a single valid JSON object. No extra text, no markdown.'},
+          {role:'system', content:'You are a JSON generator for IMA CMA US exam flashcards. You must never repeat a concept recently generated.'},
           {role:'user', content:prompt}
         ],
-        max_tokens:450, temperature:0.4
+        max_tokens:450, temperature:0.7 // Increased temperature for more variety
       })
     });
     data = await res.json();
@@ -876,11 +905,24 @@ async function loadFlashcard() {
   }
 
   fcCurrent=card; fcNum++;
-  if(card.topic) fcHistory=[...fcHistory.slice(-9), card.topic];
+  // Track both topic and the term to prevent any repetition
+  if(card.topic) fcHistory = [...fcHistory.slice(-14), card.topic];
+  if(card.front) fcHistory = [...fcHistory.slice(-14), card.front];
 
   $('fc-front-text').textContent = card.front;
   $('fc-back-text').textContent  = card.back;
   $('fc-topic-lbl').textContent  = card.topic ? '📌 '+card.topic : '';
+  
+  // Update badge and card difficulty color
+  const badge = $('fc-diff-badge');
+  if(badge) {
+    badge.textContent = difficulty;
+    badge.className = 'diff-badge diff-' + difficulty;
+  }
+  const fcFront = document.querySelector('.fc-face.fc-front');
+  fcFront.classList.remove('diff-Easy', 'diff-Medium', 'diff-Hard');
+  fcFront.classList.add('diff-' + difficulty);
+
   $('fc-actions').style.display='none';
   $('fc-hint').style.display='block';
   $('fc-progress').textContent='Card '+fcNum;
